@@ -32,15 +32,6 @@ const RULES: { title: string; body: string }[] = [
   { title: '8. 日本ルールの数え方', body: '「陣地の目の数 ＋ 取った石（アゲハマ）」が得点です。盤上の石は数えません。白は先手の黒に対するハンデとしてコミ（小さい盤は0.5目、9路以上は6.5目）が加算されます。終局時に取られそうな石（死に石）は選んで取り上げます。' },
 ]
 
-const BEGINNER_TIPS = [
-  { title: 'すみから始める', body: 'すみは2つの辺を使えるので、陣地を囲いやすい場所です。まずはすみや辺に打ってみましょう。' },
-  { title: '打ったあと、まわりを見る', body: '石の上下左右に空きがあるか確認しましょう。空きが少ない石は、相手に取られやすくなります。' },
-  { title: '危ない石を助ける', body: '自分の石のまわりの空きがあと1つなら、取られる直前です。近くにもう一手打つか、味方の石につないで助けましょう。' },
-  { title: '味方の石をつなぐ', body: '近くの味方どうしをつなぐと、石のグループが大きくなり、まわりの空きを共有できます。' },
-  { title: '全部の石を取ろうとしない', body: '相手を追いかけるだけでなく、空いている場所を囲んで自分の陣地を作ることも大切です。' },
-  { title: '迷ったらヒントを使う', body: '対局中の「💡 置き場所のヒント」を押すと、おすすめの交点が表示されます。' },
-]
-
 const REASONS: Record<string, string> = {
   occupied: 'そこにはすでに石があります。空いている交点を選んでね。',
   suicide: '自殺手です！置くと自分の石の呼吸点がゼロになるので置けません（相手の石が取れる場合は置けます）。',
@@ -81,6 +72,27 @@ const TUTORIAL_STEPS = [
     board: tutorialBoard(['.....', '.....', '.B.B.', '.....', '.....']),
     target: { x: 2, y: 2 },
     success: 'できました！つながった石は、まわりの空きを共有して取られにくくなります。',
+  },
+  {
+    title: '危ない味方を助ける',
+    text: '真ん中の黒石の上下左右は白石3つと空き1つです。黄色の場所に黒石を足して、味方を助けましょう。',
+    board: tutorialBoard(['.....', '..W..', '.WBW.', '.....', '.....']),
+    target: { x: 2, y: 3 },
+    success: '黒石をつないで、空きを増やせました。自分の石のまわりが狭くなったら、取られる前に助けましょう。',
+  },
+  {
+    title: 'すみから陣地を作る',
+    text: 'すみは盤の端が2つあり、囲いやすい場所です。黄色の交点に置いて、すみの空きを囲ってみましょう。',
+    board: tutorialBoard(['.B...', 'B....', '.....', '.....', '.....']),
+    target: { x: 1, y: 1 },
+    success: 'すみの空きを囲めました！相手の石を取ることだけでなく、空いた場所を囲うことも勝つコツです。',
+  },
+  {
+    title: '相手を追いかけすぎない',
+    text: '白石の近くばかりに打つ必要はありません。黄色の場所に打って、離れた空きも自分の陣地にしてみましょう。',
+    board: tutorialBoard(['B....', '.....', '..W..', '.....', '.....']),
+    target: { x: 4, y: 0 },
+    success: '白石を追わずに、別の空いた場所にも打てました。盤の広い場所を使って陣地を増やしましょう。',
   },
 ] as const
 
@@ -523,7 +535,7 @@ export default function App() {
               <button className="text-sm text-stone-600 underline" onClick={() => setTutorialStep(null)}>閉じる</button>
             </div>
             <h1 className="text-2xl font-bold">{completed ? 'よくできました！' : step.title}</h1>
-            <p className="text-stone-700">{completed ? '石を置く場所、石のまわりの空き、相手の石を取る方法を体験しました。' : step.text}</p>
+          <p className="text-stone-700">{completed ? '石を置く場所、相手の石を取る方法、危ない石の守り方、陣地の作り方を体験しました。' : step.text}</p>
             {!completed && <p className="text-sm text-amber-800">黄色い丸の交点をクリックしてください。</p>}
             {tutorialMessage && <p className="rounded-lg bg-green-100 p-3 text-sm text-green-900">{tutorialMessage}</p>}
             {completed ? (
@@ -544,7 +556,7 @@ export default function App() {
           <h1 className="text-center text-4xl font-bold tracking-widest">囲碁入門</h1>
           <p className="mt-3 text-center text-stone-600">遊びながら覚える、はじめての囲碁。ルールは日本ルールです。</p>
           <button onClick={beginTutorial} className="mt-6 w-full rounded-xl border-2 border-amber-600 bg-amber-100 px-4 py-3 text-lg font-semibold text-amber-950 hover:bg-amber-200">
-            🎓 石を置きながらルールを体験する
+            🎓 ルールと勝つコツを盤上で体験する
           </button>
           <h2 className="mt-8 mb-3 text-lg font-bold">1. 相手を選ぶ</h2>
           <div className="flex gap-3">
@@ -594,15 +606,6 @@ export default function App() {
           </div>
           <h2 className="mt-10 mb-3 text-lg font-bold">囲碁のルール（かんたん解説）</h2>
           {Rules}
-          <h2 className="mt-10 mb-3 text-lg font-bold">最初の対局で使えるコツ</h2>
-          <div className="space-y-3">
-            {BEGINNER_TIPS.map((tip, i) => (
-              <div key={tip.title} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-                <h3 className="font-bold text-amber-950">{i + 1}. {tip.title}</h3>
-                <p className="mt-1 text-sm text-stone-700">{tip.body}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </main>
     )
@@ -713,7 +716,7 @@ export default function App() {
             {showRules ? 'ルールを閉じる' : '📖 ルールを見る'}
           </button>
           <button className="w-full rounded-lg border-2 border-amber-500 bg-amber-50 py-2 text-sm font-semibold text-amber-900" onClick={beginTutorial}>
-            🎓 石を置きながらルールを体験する
+            🎓 ルールと勝つコツを盤上で体験する
           </button>
           {showRules && Rules}
         </aside>
