@@ -263,6 +263,7 @@ export default function App() {
   const [tutorialStep, setTutorialStep] = useState<number | null>(null)
   const [tutorialBoardState, setTutorialBoardState] = useState<BoardT>(emptyBoard(5))
   const [tutorialMessage, setTutorialMessage] = useState('')
+  const [tutorialSpeaking, setTutorialSpeaking] = useState(false)
   const [tips, setTips] = useState(true)
 
   const start = (s: number) => {
@@ -284,9 +285,40 @@ export default function App() {
   const cpuTurn = mode === 'cpu' && snap?.turn === 'W' && !finished
 
   const beginTutorial = () => {
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
+    setTutorialSpeaking(false)
     setTutorialBoardState(TUTORIAL_START_BOARD.map((row) => [...row]))
     setTutorialStep(0)
     setTutorialMessage('')
+  }
+
+  const stopTutorialSpeech = () => {
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
+    setTutorialSpeaking(false)
+  }
+
+  const closeTutorial = () => {
+    stopTutorialSpeech()
+    setTutorialStep(null)
+  }
+
+  const readTutorialAloud = () => {
+    if (tutorialStep === null || typeof window === 'undefined' || !('speechSynthesis' in window)) return
+    const completed = tutorialStep >= TUTORIAL_STEPS.length
+    const step = TUTORIAL_STEPS[Math.min(tutorialStep, TUTORIAL_STEPS.length - 1)]
+    const title = completed ? 'よくできました！' : step.title
+    const explanation = completed
+      ? '空きの意味、白石をアタリにして取る流れ、黒石をつなぐこと、陣地を広げることを、同じ盤面で体験しました。'
+      : `${step.text}${tutorialMessage ? ` ${tutorialMessage}` : ''}`
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(`${title}。${explanation}`)
+    utterance.lang = 'ja-JP'
+    utterance.rate = 0.92
+    utterance.onstart = () => setTutorialSpeaking(true)
+    utterance.onend = () => setTutorialSpeaking(false)
+    utterance.onerror = () => setTutorialSpeaking(false)
+    setTutorialSpeaking(true)
+    window.speechSynthesis.speak(utterance)
   }
 
   const handleTutorialPlay = (pos: Pos) => {
@@ -301,6 +333,7 @@ export default function App() {
       setTutorialMessage('ここには石を置けません。黄色い丸の交点を選んでください。')
       return
     }
+    stopTutorialSpeech()
     setTutorialBoardState(result.board)
     setTutorialMessage(step.success)
     setTutorialStep(tutorialStep + 1)
@@ -390,6 +423,10 @@ export default function App() {
     }, 500)
     return () => clearTimeout(t)
   }, [snap, cpuTurn, commit, cpuDifficulty])
+
+  useEffect(() => () => {
+    if (typeof window !== 'undefined') window.speechSynthesis?.cancel()
+  }, [])
 
   const undo = () => {
     if (!history.length) return
@@ -534,14 +571,21 @@ export default function App() {
           <section className="w-full space-y-4 rounded-2xl bg-white/85 p-5 shadow-lg lg:w-96" aria-live="polite">
             <div className="flex items-center justify-between">
               <span className="text-sm font-semibold text-amber-800">{completed ? 'チュートリアル完了' : `いっしょに練習 ${tutorialStep + 1} / ${TUTORIAL_STEPS.length}`}</span>
-              <button className="text-sm text-stone-600 underline" onClick={() => setTutorialStep(null)}>閉じる</button>
+              <button className="text-sm text-stone-600 underline" onClick={closeTutorial}>閉じる</button>
             </div>
             <h1 className="text-2xl font-bold">{completed ? 'よくできました！' : step.title}</h1>
           <p className="text-stone-700">{completed ? '空きの意味、白石をアタリにして取る流れ、黒石をつなぐこと、陣地を広げることを、同じ盤面で体験しました。' : step.text}</p>
+            <button
+              className="w-full rounded-lg border border-amber-500 bg-amber-50 py-2 font-semibold text-amber-950 hover:bg-amber-100"
+              onClick={tutorialSpeaking ? stopTutorialSpeech : readTutorialAloud}
+              aria-pressed={tutorialSpeaking}
+            >
+              {tutorialSpeaking ? '⏹ 解説を止める' : '🔊 解説を聞く'}
+            </button>
             {!completed && <p className="text-sm text-amber-800">黄色い丸の交点をクリックしてください。</p>}
             {tutorialMessage && <p className="rounded-lg bg-green-100 p-3 text-sm text-green-900">{tutorialMessage}</p>}
             {completed ? (
-              <button className="w-full rounded-lg bg-amber-700 py-3 font-semibold text-white" onClick={() => setTutorialStep(null)}>対局に戻る</button>
+              <button className="w-full rounded-lg bg-amber-700 py-3 font-semibold text-white" onClick={closeTutorial}>対局に戻る</button>
             ) : tutorialStep < 2 ? (
               <p className="text-xs font-medium text-amber-900">黄色い点 ＝ 石が置かれていない交点 ＝ 空き</p>
             ) : (
