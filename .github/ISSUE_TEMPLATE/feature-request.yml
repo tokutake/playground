@@ -1,0 +1,55 @@
+name: 機能の実装
+description: 実装したい機能を登録します
+title: ""
+labels: []
+assignees: []
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: やりたいこと
+      description: 実装したい機能を具体的に書いてください。
+      placeholder: "例: ...できるようにする"
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: 背景・目的
+      description: なぜこの機能が必要かを書いてください。
+    validations:
+      required: false
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: 完了条件
+      description: どのような状態になれば完了かを書いてください。
+      placeholder: |-
+        - [ ] ...できる
+        - [ ] ...が確認できる
+    validations:
+      required: false
+  - type: input
+    id: budget
+    attributes:
+      label: 予算
+      description: 利用できる予算や上限があれば記載してください。未定の場合は空欄で構いません。
+      placeholder: "例: $20/月まで、追加費用なし"
+    validations:
+      required: false
+  - type: input
+    id: time_budget
+    attributes:
+      label: 作業時間
+      description: 作業にかけられる時間の目安があれば記載してください。
+      placeholder: "例: 4時間以内"
+    validations:
+      required: false
+  - type: input
+    id: tech_stack
+    attributes:
+      label: 技術スタック
+      description: 使用したい、または既に決まっている技術があれば記載してください。
+      placeholder: "例: Python、FastAPI、PostgreSQL"
+    validations:
+      required: false
