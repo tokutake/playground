@@ -50,12 +50,15 @@ type Snapshot = {
   message: string
 }
 
+type PlacementHint = { pos: Pos; reason: string }
+
 type Mode = 'cpu' | 'two'
 
 function BoardView({
   board,
   turn,
   lastMove,
+  hintPos,
   disabled,
   dead,
   territory,
@@ -65,6 +68,7 @@ function BoardView({
   board: BoardT
   turn: Stone
   lastMove: Pos | null
+  hintPos?: Pos | null
   disabled?: boolean
   dead?: Set<string>
   territory?: (Stone | null)[][]
@@ -154,6 +158,20 @@ function BoardView({
           ) : null,
         ),
       )}
+      {hintPos && board[hintPos.y][hintPos.x] === null && (
+        <g pointerEvents="none" aria-label="おすすめの場所">
+          <circle cx={px(hintPos.x)} cy={px(hintPos.y)} r={r * 0.9} fill="#facc15" opacity={0.32} />
+          <circle
+            cx={px(hintPos.x)}
+            cy={px(hintPos.y)}
+            r={r * 0.78}
+            fill="none"
+            stroke="#92400e"
+            strokeWidth={3}
+            strokeDasharray="5 4"
+          />
+        </g>
+      )}
       {!disabled && hover && board[hover.y][hover.x] === null && hoverOk(hover) && (
         <circle cx={px(hover.x)} cy={px(hover.y)} r={r} fill={turn === 'B' ? '#000' : '#fff'} opacity={0.4} />
       )}
@@ -183,6 +201,7 @@ export default function App() {
   const [snap, setSnap] = useState<Snapshot | null>(null)
   const [history, setHistory] = useState<Snapshot[]>([])
   const [dead, setDead] = useState<Set<string>>(new Set())
+  const [placementHint, setPlacementHint] = useState<PlacementHint | null>(null)
   const [showRules, setShowRules] = useState(false)
   const [tips, setTips] = useState(true)
 
@@ -190,6 +209,7 @@ export default function App() {
     setSize(s)
     setHistory([])
     setDead(new Set())
+    setPlacementHint(null)
     setSnap({
       board: emptyBoard(s),
       turn: 'B',
@@ -212,6 +232,7 @@ export default function App() {
 
   const play = (p: Pos) => {
     if (!snap || finished || cpuTurn) return
+    setPlacementHint(null)
     const res = playMove(snap.board, p, snap.turn, snap.prevKey)
     if (!res.ok) {
       setSnap({ ...snap, message: REASONS[res.reason] ?? '' })
@@ -237,6 +258,7 @@ export default function App() {
 
   const pass = () => {
     if (!snap || finished || cpuTurn) return
+    setPlacementHint(null)
     const passes = snap.passes + 1
     commit({
       ...snap,
@@ -288,6 +310,7 @@ export default function App() {
 
   const undo = () => {
     if (!history.length) return
+    setPlacementHint(null)
     let steps = 1
     if (mode === 'cpu' && history.length >= 2 && snap?.turn === 'B') steps = 2
     const target = history[history.length - steps]
@@ -306,6 +329,82 @@ export default function App() {
     const all = keys.every((k) => n.has(k))
     keys.forEach((k) => (all ? n.delete(k) : n.add(k)))
     setDead(n)
+  }
+
+  const requestPlacementHint = () => {
+    if (!snap || finished || cpuTurn) return
+    const board = snap.board
+    const size = board.length
+    const candidates: { pos: Pos; result: Extract<ReturnType<typeof playMove>, { ok: true }> }[] = []
+    for (let y = 0; y < size; y++) {
+      for (let x = 0; x < size; x++) {
+        const pos = { x, y }
+        const result = playMove(board, pos, snap.turn, snap.prevKey)
+        if (result.ok) candidates.push({ pos, result })
+      }
+    }
+
+    if (!candidates.length) {
+      setPlacementHint(null)
+      return
+    }
+
+    const captures = candidates
+      .filter(({ result }) => result.captured.length > 0)
+      .sort((a, b) => b.result.captured.length - a.result.captured.length)
+    if (captures.length) {
+      setPlacementHint({ pos: captures[0].pos, reason: 'ここに打つと相手の石を取れます。黄色の丸を目印にしてみましょう。' })
+      return
+    }
+
+    const threatened = new Map<string, Pos[]>()
+    board.forEach((row, y) => row.forEach((stone, x) => {
+      if (stone !== snap.turn) return
+      const group = getGroup(board, { x, y })
+      if (group.liberties.length === 1) threatened.set(group.stones.map((p) => `${p.x},${p.y}`).sort().join('|'), group.liberties)
+    }))
+    const defense = candidates.find(({ pos }) =>
+      [...threatened.values()].some((liberties) => liberties.some((p) => p.x === pos.x && p.y === pos.y)),
+    )
+    if (defense) {
+      setPlacementHint({ pos: defense.pos, reason: 'アタリになっている味方の石を助けられる場所です。黄色の丸に打つと呼吸点を増やせます。' })
+      return
+    }
+
+    if (board.every((row) => row.every((stone) => stone === null))) {
+      const center = { x: Math.floor(size / 2), y: Math.floor(size / 2) }
+      setPlacementHint({ pos: center, reason: '最初は中央付近から始めてみましょう。黄色の丸が最初の一手のおすすめです。' })
+      return
+    }
+
+    const attack = candidates.find(({ result }) => result.atari.length > 0)
+    if (attack) {
+      setPlacementHint({ pos: attack.pos, reason: 'ここに打つと相手の石をアタリにできます。相手の呼吸点を見てみましょう。' })
+      return
+    }
+
+    const center = (size - 1) / 2
+    const score = ({ pos, result }: (typeof candidates)[number]) => {
+      const edge = Math.min(pos.x, pos.y, size - 1 - pos.x, size - 1 - pos.y)
+      const nearCenter = size - Math.abs(pos.x - center) - Math.abs(pos.y - center)
+      const adjacentFriends = [
+        board[pos.y]?.[pos.x - 1], board[pos.y]?.[pos.x + 1],
+        board[pos.y - 1]?.[pos.x], board[pos.y + 1]?.[pos.x],
+      ].filter((stone) => stone === snap.turn).length
+      return nearCenter * 0.4 + (edge === 0 ? -3 : edge === 1 ? 0.5 : 1) + adjacentFriends * 0.8 - (result.selfAtari ? 20 : 0)
+    }
+    candidates.sort((a, b) => score(b) - score(a) || a.pos.y - b.pos.y || a.pos.x - b.pos.x)
+    const chosen = candidates[0]
+    const adjacentFriend = [
+      board[chosen.pos.y]?.[chosen.pos.x - 1], board[chosen.pos.y]?.[chosen.pos.x + 1],
+      board[chosen.pos.y - 1]?.[chosen.pos.x], board[chosen.pos.y + 1]?.[chosen.pos.x],
+    ].some((stone) => stone === snap.turn)
+    setPlacementHint({
+      pos: chosen.pos,
+      reason: adjacentFriend
+        ? '味方の石とつながりやすい場所です。石のグループを広げてみましょう。'
+        : '中央寄りの空いた場所です。まずは黄色の丸に置いて、陣地を広げる感覚を試してみましょう。',
+    })
   }
 
   const score = useMemo(() => {
@@ -378,6 +477,7 @@ export default function App() {
             board={snap.board}
             turn={snap.turn}
             lastMove={snap.lastMove}
+            hintPos={placementHint?.pos}
             disabled={finished || cpuTurn}
             dead={dead}
             territory={score?.territory}
@@ -418,6 +518,13 @@ export default function App() {
             </div>
           )}
 
+          {placementHint && (
+            <div className="rounded-xl border border-amber-300 bg-amber-100 p-3 text-sm text-amber-950 shadow" role="status">
+              <strong>置き場所のヒント</strong>
+              <p className="mt-1">黄色の丸がおすすめの交点です。{placementHint.reason}</p>
+            </div>
+          )}
+
           <div className="grid grid-cols-3 gap-2">
             <button onClick={pass} disabled={finished || cpuTurn} className="rounded-lg bg-stone-700 py-2 text-white disabled:opacity-40">
               パス
@@ -429,6 +536,13 @@ export default function App() {
               新規対局
             </button>
           </div>
+          <button
+            onClick={requestPlacementHint}
+            disabled={finished || cpuTurn}
+            className="w-full rounded-lg border-2 border-amber-500 bg-white py-2 font-semibold text-amber-900 hover:bg-amber-50 disabled:opacity-40"
+          >
+            💡 置き場所のヒント
+          </button>
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={tips} onChange={(e) => setTips(e.target.checked)} /> ヒントを表示
           </label>
