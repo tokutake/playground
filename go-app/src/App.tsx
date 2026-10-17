@@ -75,6 +75,12 @@ const TUTORIAL_STEPS = [
   },
 ] as const
 
+const lastTutorialStep = TUTORIAL_STEPS[TUTORIAL_STEPS.length - 1]
+const TUTORIAL_COMPLETION_BOARD = (() => {
+  const result = playMove(lastTutorialStep.board, lastTutorialStep.target, 'B')
+  return result.ok ? result.board : lastTutorialStep.board
+})()
+
 type Snapshot = {
   board: BoardT
   turn: Stone
@@ -487,7 +493,7 @@ export default function App() {
   if (tutorialStep !== null) {
     const completed = tutorialStep >= TUTORIAL_STEPS.length
     const step = TUTORIAL_STEPS[Math.min(tutorialStep, TUTORIAL_STEPS.length - 1)]
-    const board = completed ? emptyBoard(5) : step.board
+    const board = completed ? TUTORIAL_COMPLETION_BOARD : step.board
     return (
       <main className={shell}>
         <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6 lg:flex-row lg:items-center">
