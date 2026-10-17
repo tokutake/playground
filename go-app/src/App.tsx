@@ -32,6 +32,15 @@ const RULES: { title: string; body: string }[] = [
   { title: '8. 日本ルールの数え方', body: '「陣地の目の数 ＋ 取った石（アゲハマ）」が得点です。盤上の石は数えません。白は先手の黒に対するハンデとしてコミ（小さい盤は0.5目、9路以上は6.5目）が加算されます。終局時に取られそうな石（死に石）は選んで取り上げます。' },
 ]
 
+const BEGINNER_TIPS = [
+  { title: 'すみから始める', body: 'すみは2つの辺を使えるので、陣地を囲いやすい場所です。まずはすみや辺に打ってみましょう。' },
+  { title: '打ったあと、まわりを見る', body: '石の上下左右に空きがあるか確認しましょう。空きが少ない石は、相手に取られやすくなります。' },
+  { title: '危ない石を助ける', body: '自分の石のまわりの空きがあと1つなら、取られる直前です。近くにもう一手打つか、味方の石につないで助けましょう。' },
+  { title: '味方の石をつなぐ', body: '近くの味方どうしをつなぐと、石のグループが大きくなり、まわりの空きを共有できます。' },
+  { title: '全部の石を取ろうとしない', body: '相手を追いかけるだけでなく、空いている場所を囲んで自分の陣地を作ることも大切です。' },
+  { title: '迷ったらヒントを使う', body: '対局中の「💡 置き場所のヒント」を押すと、おすすめの交点が表示されます。' },
+]
+
 const REASONS: Record<string, string> = {
   occupied: 'そこにはすでに石があります。空いている交点を選んでね。',
   suicide: '自殺手です！置くと自分の石の呼吸点がゼロになるので置けません（相手の石が取れる場合は置けます）。',
@@ -585,6 +594,15 @@ export default function App() {
           </div>
           <h2 className="mt-10 mb-3 text-lg font-bold">囲碁のルール（かんたん解説）</h2>
           {Rules}
+          <h2 className="mt-10 mb-3 text-lg font-bold">最初の対局で使えるコツ</h2>
+          <div className="space-y-3">
+            {BEGINNER_TIPS.map((tip, i) => (
+              <div key={tip.title} className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <h3 className="font-bold text-amber-950">{i + 1}. {tip.title}</h3>
+                <p className="mt-1 text-sm text-stone-700">{tip.body}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </main>
     )
