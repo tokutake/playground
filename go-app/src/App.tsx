@@ -46,11 +46,20 @@ const tutorialBoard = (rows: string[]): BoardT => rows.map((row) =>
 
 const TUTORIAL_STEPS = [
   {
-    title: '交点に石を置く',
-    text: '線と線が交わる場所をクリックして、黒い石を置いてみましょう。まずは真ん中です。',
+    title: '「空き」は石がない交点',
+    text: '線と線が交わる場所のうち、石が置かれていない点を「空き」と呼びます。黄色い点が空きです。真ん中をクリックしてみましょう。',
     board: tutorialBoard(['.....', '.....', '.....', '.....', '.....']),
     target: { x: 2, y: 2 },
-    success: '石を置けました！石は交点に置き、いったん置くと動かしません。',
+    showEmptyPoints: true,
+    success: '真ん中に石を置けました。石が置かれた点は空きではなくなり、ほかの黄色い点は空きのままです。',
+  },
+  {
+    title: '石がある点と空きを見分ける',
+    text: '黒石がある交点は、もう空きではありません。黄色い点は石のない交点です。もうひとつ石を置いて、黄色い点が減るのを見ましょう。',
+    board: tutorialBoard(['.....', '.....', '..B..', '.....', '.....']),
+    target: { x: 2, y: 1 },
+    showEmptyPoints: true,
+    success: '黄色い点に石を置くと、その交点は空きではなくなります。石の上下左右にある空きは、石が取られずに残るために必要です。',
   },
   {
     title: '石のまわりの空きを見る',
@@ -122,6 +131,7 @@ function BoardView({
   turn,
   lastMove,
   hintPos,
+  showEmptyPoints,
   disabled,
   dead,
   territory,
@@ -132,6 +142,7 @@ function BoardView({
   turn: Stone
   lastMove: Pos | null
   hintPos?: Pos | null
+  showEmptyPoints?: boolean
   disabled?: boolean
   dead?: Set<string>
   territory?: (Stone | null)[][]
@@ -208,6 +219,20 @@ function BoardView({
             />
           ) : null,
         ),
+      )}
+      {showEmptyPoints && board.map((row, y) =>
+        row.map((stone, x) => stone === null ? (
+          <circle
+            key={`empty-${x}-${y}`}
+            cx={px(x)}
+            cy={px(y)}
+            r={cell * 0.15}
+            fill="#fef3c7"
+            stroke="#92400e"
+            strokeWidth={1.5}
+            pointerEvents="none"
+          />
+        ) : null),
       )}
       {board.map((row, y) =>
         row.map((c, x) =>
@@ -524,6 +549,7 @@ export default function App() {
               turn="B"
               lastMove={null}
               hintPos={completed ? null : step.target}
+              showEmptyPoints={tutorialStep < 2 && !completed}
               disabled={completed}
               onPlay={handleTutorialPlay}
               hoverOk={(pos) => !completed && playMove(board, pos, 'B').ok}
@@ -540,6 +566,8 @@ export default function App() {
             {tutorialMessage && <p className="rounded-lg bg-green-100 p-3 text-sm text-green-900">{tutorialMessage}</p>}
             {completed ? (
               <button className="w-full rounded-lg bg-amber-700 py-3 font-semibold text-white" onClick={() => setTutorialStep(null)}>対局に戻る</button>
+            ) : tutorialStep < 2 ? (
+              <p className="text-xs font-medium text-amber-900">黄色い点 ＝ 石が置かれていない交点 ＝ 空き</p>
             ) : (
               <p className="text-xs text-stone-500">「呼吸点」は石の上下左右にある空きのことです。「アタリ」は、その空きがあと1つになった状態です。</p>
             )}
