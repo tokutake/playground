@@ -40,6 +40,41 @@ const REASONS: Record<string, string> = {
 
 const name = (s: Stone) => (s === 'B' ? '黒' : '白')
 
+const tutorialBoard = (rows: string[]): BoardT => rows.map((row) =>
+  row.split('').map((cell) => cell === 'B' ? 'B' : cell === 'W' ? 'W' : null),
+)
+
+const TUTORIAL_STEPS = [
+  {
+    title: '交点に石を置く',
+    text: '線と線が交わる場所をクリックして、黒い石を置いてみましょう。まずは真ん中です。',
+    board: tutorialBoard(['.....', '.....', '.....', '.....', '.....']),
+    target: { x: 2, y: 2 },
+    success: '石を置けました！石は交点に置き、いったん置くと動かしません。',
+  },
+  {
+    title: '石のまわりの空きを見る',
+    text: '黒石の上下左右にある空きが「呼吸点」です。黄色の場所に打つと、白石の呼吸点が1つだけになります。',
+    board: tutorialBoard(['.....', '.....', '.BWB.', '.....', '.....']),
+    target: { x: 2, y: 1 },
+    success: '白石の呼吸点は下の1か所だけになりました。この「あと1つで取られる」状態をアタリと呼びます。',
+  },
+  {
+    title: '相手の石を取る',
+    text: '白石の最後の空きに黒石を置いてみましょう。黄色の場所をクリックしてください。',
+    board: tutorialBoard(['.....', '..B..', '.BWB.', '.....', '.....']),
+    target: { x: 2, y: 3 },
+    success: '白石が盤から取り除かれました！相手の石のまわりの空きを全部ふさぐと取れます。',
+  },
+  {
+    title: '味方の石をつなぐ',
+    text: '2つの黒石の間に置くと、石どうしがつながります。黄色の場所に打ってみましょう。',
+    board: tutorialBoard(['.....', '.....', '.B.B.', '.....', '.....']),
+    target: { x: 2, y: 2 },
+    success: 'できました！つながった石は、まわりの空きを共有して取られにくくなります。',
+  },
+] as const
+
 type Snapshot = {
   board: BoardT
   turn: Stone
@@ -205,6 +240,8 @@ export default function App() {
   const [dead, setDead] = useState<Set<string>>(new Set())
   const [placementHint, setPlacementHint] = useState<PlacementHint | null>(null)
   const [showRules, setShowRules] = useState(false)
+  const [tutorialStep, setTutorialStep] = useState<number | null>(null)
+  const [tutorialMessage, setTutorialMessage] = useState('')
   const [tips, setTips] = useState(true)
 
   const start = (s: number) => {
@@ -224,6 +261,22 @@ export default function App() {
 
   const finished = !!snap && snap.passes >= 2
   const cpuTurn = mode === 'cpu' && snap?.turn === 'W' && !finished
+
+  const beginTutorial = () => {
+    setTutorialStep(0)
+    setTutorialMessage('')
+  }
+
+  const handleTutorialPlay = (pos: Pos) => {
+    if (tutorialStep === null || tutorialStep >= TUTORIAL_STEPS.length) return
+    const step = TUTORIAL_STEPS[tutorialStep]
+    if (pos.x !== step.target.x || pos.y !== step.target.y) {
+      setTutorialMessage('黄色い丸の交点をクリックしてみましょう。')
+      return
+    }
+    setTutorialMessage(step.success)
+    setTutorialStep(tutorialStep + 1)
+  }
 
   const commit = useCallback((next: Snapshot) => {
     setSnap((cur) => {
@@ -431,12 +484,53 @@ export default function App() {
 
   const shell = 'min-h-screen bg-gradient-to-br from-stone-100 via-amber-50 to-stone-200 text-stone-800'
 
+  if (tutorialStep !== null) {
+    const completed = tutorialStep >= TUTORIAL_STEPS.length
+    const step = TUTORIAL_STEPS[Math.min(tutorialStep, TUTORIAL_STEPS.length - 1)]
+    const board = completed ? emptyBoard(5) : step.board
+    return (
+      <main className={shell}>
+        <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6 lg:flex-row lg:items-center">
+          <div className="flex flex-1 justify-center">
+            <BoardView
+              board={board}
+              turn="B"
+              lastMove={null}
+              hintPos={completed ? null : step.target}
+              disabled={completed}
+              onPlay={handleTutorialPlay}
+              hoverOk={(pos) => !completed && playMove(board, pos, 'B').ok}
+            />
+          </div>
+          <section className="w-full space-y-4 rounded-2xl bg-white/85 p-5 shadow-lg lg:w-96" aria-live="polite">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-semibold text-amber-800">{completed ? 'チュートリアル完了' : `いっしょに練習 ${tutorialStep + 1} / ${TUTORIAL_STEPS.length}`}</span>
+              <button className="text-sm text-stone-600 underline" onClick={() => setTutorialStep(null)}>閉じる</button>
+            </div>
+            <h1 className="text-2xl font-bold">{completed ? 'よくできました！' : step.title}</h1>
+            <p className="text-stone-700">{completed ? '石を置く場所、石のまわりの空き、相手の石を取る方法を体験しました。' : step.text}</p>
+            {!completed && <p className="text-sm text-amber-800">黄色い丸の交点をクリックしてください。</p>}
+            {tutorialMessage && <p className="rounded-lg bg-green-100 p-3 text-sm text-green-900">{tutorialMessage}</p>}
+            {completed ? (
+              <button className="w-full rounded-lg bg-amber-700 py-3 font-semibold text-white" onClick={() => setTutorialStep(null)}>対局に戻る</button>
+            ) : (
+              <p className="text-xs text-stone-500">「呼吸点」は石の上下左右にある空きのことです。「アタリ」は、その空きがあと1つになった状態です。</p>
+            )}
+          </section>
+        </div>
+      </main>
+    )
+  }
+
   if (!size || !snap) {
     return (
       <main className={shell}>
         <div className="mx-auto max-w-3xl px-5 py-10">
           <h1 className="text-center text-4xl font-bold tracking-widest">囲碁入門</h1>
           <p className="mt-3 text-center text-stone-600">遊びながら覚える、はじめての囲碁。ルールは日本ルールです。</p>
+          <button onClick={beginTutorial} className="mt-6 w-full rounded-xl border-2 border-amber-600 bg-amber-100 px-4 py-3 text-lg font-semibold text-amber-950 hover:bg-amber-200">
+            🎓 石を置きながらルールを体験する
+          </button>
           <h2 className="mt-8 mb-3 text-lg font-bold">1. 相手を選ぶ</h2>
           <div className="flex gap-3">
             {([['cpu', '🤖 CPUと対戦（あなたは黒）'], ['two', '👥 ふたりで対戦']] as const).map(([m, l]) => (
@@ -593,6 +687,9 @@ export default function App() {
 
           <button className="w-full rounded-lg border border-stone-400 bg-white py-2 text-sm" onClick={() => setShowRules(!showRules)}>
             {showRules ? 'ルールを閉じる' : '📖 ルールを見る'}
+          </button>
+          <button className="w-full rounded-lg border-2 border-amber-500 bg-amber-50 py-2 text-sm font-semibold text-amber-900" onClick={beginTutorial}>
+            🎓 石を置きながらルールを体験する
           </button>
           {showRules && Rules}
         </aside>
