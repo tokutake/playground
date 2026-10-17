@@ -159,13 +159,19 @@ export function scoreJapanese(b: Board, captures: { B: number; W: number }, dead
 }
 
 /** Very simple CPU: prefers captures, saving own stones in atari, then random sane moves. */
-export function chooseCpuMove(b: Board, color: Stone, previousKey?: string): Pos | null {
+export function chooseCpuMove(b: Board, color: Stone, previousKey?: string, difficulty: 'easy' | 'normal' = 'normal'): Pos | null {
   const size = b.length
   const moves: { pos: Pos; score: number }[] = []
   for (let y = 0; y < size; y++)
     for (let x = 0; x < size; x++) {
       const r = playMove(b, { x, y }, color, previousKey)
       if (!r.ok) continue
+      if (difficulty === 'easy') {
+        // Beginner mode deliberately plays randomly so the CPU does not punish
+        // every mistake. Rules such as suicide and ko still apply.
+        moves.push({ pos: { x, y }, score: Math.random() })
+        continue
+      }
       const g = getGroup(r.board, { x, y })
       // don't fill own eyes: all neighbours are own stones and the group stays big
       const ns = neighbors(b, { x, y })

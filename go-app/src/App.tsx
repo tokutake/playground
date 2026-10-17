@@ -53,6 +53,7 @@ type Snapshot = {
 type PlacementHint = { pos: Pos; reason: string }
 
 type Mode = 'cpu' | 'two'
+type CpuDifficulty = 'easy' | 'normal'
 
 function BoardView({
   board,
@@ -198,6 +199,7 @@ function BoardView({
 export default function App() {
   const [size, setSize] = useState<number | null>(null)
   const [mode, setMode] = useState<Mode>('cpu')
+  const [cpuDifficulty, setCpuDifficulty] = useState<CpuDifficulty>('easy')
   const [snap, setSnap] = useState<Snapshot | null>(null)
   const [history, setHistory] = useState<Snapshot[]>([])
   const [dead, setDead] = useState<Set<string>>(new Set())
@@ -276,7 +278,7 @@ export default function App() {
   useEffect(() => {
     if (!snap || !cpuTurn) return
     const t = setTimeout(() => {
-      const mv = chooseCpuMove(snap.board, 'W', snap.prevKey)
+      const mv = chooseCpuMove(snap.board, 'W', snap.prevKey, cpuDifficulty)
       if (!mv) {
         commit({
           ...snap,
@@ -306,7 +308,7 @@ export default function App() {
       })
     }, 500)
     return () => clearTimeout(t)
-  }, [snap, cpuTurn, commit])
+  }, [snap, cpuTurn, commit, cpuDifficulty])
 
   const undo = () => {
     if (!history.length) return
@@ -447,6 +449,27 @@ export default function App() {
               </button>
             ))}
           </div>
+          {mode === 'cpu' && (
+            <div className="mt-4">
+              <h3 className="mb-2 font-semibold">CPUの強さ</h3>
+              <div className="grid grid-cols-2 gap-3">
+                {([
+                  ['easy', '🌱 やさしい', 'ランダムに打つので、ゆっくり練習できます'],
+                  ['normal', '🎯 ふつう', '石を取ったり、アタリを狙ったりします'],
+                ] as const).map(([level, label, description]) => (
+                  <button
+                    key={level}
+                    onClick={() => setCpuDifficulty(level)}
+                    className={`rounded-xl border-2 p-3 text-left transition ${cpuDifficulty === level ? 'border-amber-600 bg-amber-100' : 'border-stone-300 bg-white hover:border-amber-400'}`}
+                    aria-pressed={cpuDifficulty === level}
+                  >
+                    <span className="font-medium">{label}</span>
+                    <span className="mt-1 block text-xs text-stone-600">{description}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <h2 className="mt-8 mb-3 text-lg font-bold">2. 盤の大きさを選ぶ（まずは小さい盤がおすすめ）</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
             {SIZES.map((s) => (
