@@ -46,70 +46,38 @@ const tutorialBoard = (rows: string[]): BoardT => rows.map((row) =>
 
 const TUTORIAL_STEPS = [
   {
-    title: '「空き」は石がない交点',
-    text: '線と線が交わる場所のうち、石が置かれていない点を「空き」と呼びます。黄色い点が空きです。真ん中をクリックしてみましょう。',
-    board: tutorialBoard(['.....', '.....', '.....', '.....', '.....']),
-    target: { x: 2, y: 2 },
-    showEmptyPoints: true,
-    success: '真ん中に石を置けました。石が置かれた点は空きではなくなり、ほかの黄色い点は空きのままです。',
-  },
-  {
-    title: '石がある点と空きを見分ける',
-    text: '黒石がある交点は、もう空きではありません。黄色い点は石のない交点です。もうひとつ石を置いて、黄色い点が減るのを見ましょう。',
-    board: tutorialBoard(['.....', '.....', '..B..', '.....', '.....']),
-    target: { x: 2, y: 1 },
-    showEmptyPoints: true,
-    success: '黄色い点に石を置くと、その交点は空きではなくなります。石の上下左右にある空きは、石が取られずに残るために必要です。',
+    title: '黄色い点が「空き」',
+    text: '対局途中の練習盤から始めます。すでにある石は前の手で置かれた石です。この盤面のまま最後まで進みます。黄色い丸は石のない交点（空き）。左上の丸に打ちましょう。',
+    target: { x: 1, y: 1 },
+    success: '石のない交点が「空き」です。黒石を置いたので、そこはもう空きではありません。すみは盤の端を2つ使えるため、空きを囲いやすい場所です。',
   },
   {
     title: '石のまわりの空きを見る',
-    text: '黒石の上下左右にある空きが「呼吸点」です。黄色の場所に打つと、白石の呼吸点が1つだけになります。',
-    board: tutorialBoard(['.....', '.....', '.BWB.', '.....', '.....']),
+    text: '同じ盤面の中央を見てください。白石の左右には黒石があります。上の黄色い丸に打つと、白石のまわりの空きは下の1か所だけになります。',
     target: { x: 2, y: 1 },
-    success: '白石の呼吸点は下の1か所だけになりました。この「あと1つで取られる」状態をアタリと呼びます。',
+    success: '白石の上下左右にある空きは下の1か所だけになりました。この「あと一手で取られる」状態をアタリと呼びます。',
   },
   {
     title: '相手の石を取る',
-    text: '白石の最後の空きに黒石を置いてみましょう。黄色の場所をクリックしてください。',
-    board: tutorialBoard(['.....', '..B..', '.BWB.', '.....', '.....']),
+    text: 'さっきアタリにした白石には、下にしか空きがありません。そこに黒石を置いて、白石を取ってみましょう。',
     target: { x: 2, y: 3 },
-    success: '白石が盤から取り除かれました！相手の石のまわりの空きを全部ふさぐと取れます。',
+    success: '黒石が最後の空きに入り、白石が盤から取り除かれました。直前の一手で白石の空きを1つにしたから取れたのです。',
   },
   {
     title: '味方の石をつなぐ',
-    text: '2つの黒石の間に置くと、石どうしがつながります。黄色の場所に打ってみましょう。',
-    board: tutorialBoard(['.....', '.....', '.B.B.', '.....', '.....']),
+    text: '白石がいた場所が空きになりました。左右の黒石をつなぐため、黄色い場所に黒石を置いてみましょう。',
     target: { x: 2, y: 2 },
-    success: 'できました！つながった石は、まわりの空きを共有して取られにくくなります。',
-  },
-  {
-    title: '危ない味方を助ける',
-    text: '真ん中の黒石の上下左右は白石3つと空き1つです。黄色の場所に黒石を足して、味方を助けましょう。',
-    board: tutorialBoard(['.....', '..W..', '.WBW.', '.....', '.....']),
-    target: { x: 2, y: 3 },
-    success: '黒石をつないで、空きを増やせました。自分の石のまわりが狭くなったら、取られる前に助けましょう。',
-  },
-  {
-    title: 'すみから陣地を作る',
-    text: 'すみは盤の端が2つあり、囲いやすい場所です。黄色の交点に置いて、すみの空きを囲ってみましょう。',
-    board: tutorialBoard(['.B...', 'B....', '.....', '.....', '.....']),
-    target: { x: 1, y: 1 },
-    success: 'すみの空きを囲めました！相手の石を取ることだけでなく、空いた場所を囲うことも勝つコツです。',
+    success: '左右の黒石が1つのグループになりました。つながると、まわりの空きを共有して取られにくくなります。',
   },
   {
     title: '相手を追いかけすぎない',
-    text: '白石の近くばかりに打つ必要はありません。黄色の場所に打って、離れた空きも自分の陣地にしてみましょう。',
-    board: tutorialBoard(['B....', '.....', '..W..', '.....', '.....']),
+    text: '右下の白石を取るために追いかけ続ける必要はありません。離れた右上の空きに打って、黒の陣地を広げてみましょう。',
     target: { x: 4, y: 0 },
-    success: '白石を追わずに、別の空いた場所にも打てました。盤の広い場所を使って陣地を増やしましょう。',
+    success: '白石を追わずに別の空いた場所へ打てました。相手の石を取るだけでなく、空きを囲って陣地を作ることも大切です。',
   },
 ] as const
 
-const lastTutorialStep = TUTORIAL_STEPS[TUTORIAL_STEPS.length - 1]
-const TUTORIAL_COMPLETION_BOARD = (() => {
-  const result = playMove(lastTutorialStep.board, lastTutorialStep.target, 'B')
-  return result.ok ? result.board : lastTutorialStep.board
-})()
+const TUTORIAL_START_BOARD = tutorialBoard(['.B...', 'B....', '.BWB.', '.....', '...W.'])
 
 type Snapshot = {
   board: BoardT
@@ -293,6 +261,7 @@ export default function App() {
   const [placementHint, setPlacementHint] = useState<PlacementHint | null>(null)
   const [showRules, setShowRules] = useState(false)
   const [tutorialStep, setTutorialStep] = useState<number | null>(null)
+  const [tutorialBoardState, setTutorialBoardState] = useState<BoardT>(emptyBoard(5))
   const [tutorialMessage, setTutorialMessage] = useState('')
   const [tips, setTips] = useState(true)
 
@@ -315,6 +284,7 @@ export default function App() {
   const cpuTurn = mode === 'cpu' && snap?.turn === 'W' && !finished
 
   const beginTutorial = () => {
+    setTutorialBoardState(TUTORIAL_START_BOARD.map((row) => [...row]))
     setTutorialStep(0)
     setTutorialMessage('')
   }
@@ -326,6 +296,12 @@ export default function App() {
       setTutorialMessage('黄色い丸の交点をクリックしてみましょう。')
       return
     }
+    const result = playMove(tutorialBoardState, pos, 'B')
+    if (!result.ok) {
+      setTutorialMessage('ここには石を置けません。黄色い丸の交点を選んでください。')
+      return
+    }
+    setTutorialBoardState(result.board)
     setTutorialMessage(step.success)
     setTutorialStep(tutorialStep + 1)
   }
@@ -539,7 +515,7 @@ export default function App() {
   if (tutorialStep !== null) {
     const completed = tutorialStep >= TUTORIAL_STEPS.length
     const step = TUTORIAL_STEPS[Math.min(tutorialStep, TUTORIAL_STEPS.length - 1)]
-    const board = completed ? TUTORIAL_COMPLETION_BOARD : step.board
+    const board = tutorialBoardState
     return (
       <main className={shell}>
         <div className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-6 lg:flex-row lg:items-center">
@@ -549,7 +525,7 @@ export default function App() {
               turn="B"
               lastMove={null}
               hintPos={completed ? null : step.target}
-              showEmptyPoints={tutorialStep < 2 && !completed}
+              showEmptyPoints={tutorialStep <= 1 && !completed}
               disabled={completed}
               onPlay={handleTutorialPlay}
               hoverOk={(pos) => !completed && playMove(board, pos, 'B').ok}
@@ -561,7 +537,7 @@ export default function App() {
               <button className="text-sm text-stone-600 underline" onClick={() => setTutorialStep(null)}>閉じる</button>
             </div>
             <h1 className="text-2xl font-bold">{completed ? 'よくできました！' : step.title}</h1>
-          <p className="text-stone-700">{completed ? '石を置く場所、相手の石を取る方法、危ない石の守り方、陣地の作り方を体験しました。' : step.text}</p>
+          <p className="text-stone-700">{completed ? '空きの意味、白石をアタリにして取る流れ、黒石をつなぐこと、陣地を広げることを、同じ盤面で体験しました。' : step.text}</p>
             {!completed && <p className="text-sm text-amber-800">黄色い丸の交点をクリックしてください。</p>}
             {tutorialMessage && <p className="rounded-lg bg-green-100 p-3 text-sm text-green-900">{tutorialMessage}</p>}
             {completed ? (
